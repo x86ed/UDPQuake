@@ -133,15 +133,56 @@ Run the service manually to test:
 python -m udpquake
 ```
 
-### 8. Install as System Service
+### 8. Install as System Service (First-Time Setup)
 
-Create a systemd service file:
+To run UDPQuake automatically as a background service that starts on boot, follow these steps:
+
+#### Step 1: Determine Your Paths
+
+First, note your current username and the full path to your UDPQuake installation:
+
+```bash
+# Check your username
+whoami
+
+# Get the full path to your UDPQuake directory
+pwd
+```
+
+#### Step 2: Create the Service File
+
+Create a systemd service file with elevated privileges:
 
 ```bash
 sudo nano /etc/systemd/system/udpquake.service
 ```
 
-Add the following content:
+#### Step 3: Configure the Service
+
+Add the following content to the service file, **replacing the paths and username** with your actual values:
+
+```ini
+[Unit]
+Description=UDPQuake Seismic Monitor
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/full/path/to/UDPQuake
+ExecStart=/full/path/to/UDPQuake/.venv/bin/python -m udpquake
+Restart=always
+RestartSec=10
+Environment=PATH=/full/path/to/UDPQuake/.venv/bin
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Example for Raspberry Pi (typical setup):**
 
 ```ini
 [Unit]
@@ -157,18 +198,47 @@ ExecStart=/home/pi/UDPQuake/.venv/bin/python -m udpquake
 Restart=always
 RestartSec=10
 Environment=PATH=/home/pi/UDPQuake/.venv/bin
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
 ```
 
-Enable and start the service:
+#### Step 4: Enable and Start the Service
+
+After saving the service file, run these commands to install and start the service:
 
 ```bash
+# Reload systemd to recognize the new service
 sudo systemctl daemon-reload
+
+# Enable the service to start automatically on boot
 sudo systemctl enable udpquake
+
+# Start the service immediately
 sudo systemctl start udpquake
+
+# Check that the service started successfully
+sudo systemctl status udpquake
 ```
+
+#### Step 5: Verify Installation
+
+Confirm the service is running properly:
+
+```bash
+# Check service status (should show "active (running)")
+sudo systemctl status udpquake
+
+# View recent logs to ensure it's working
+sudo journalctl -u udpquake -n 20
+
+# Follow logs in real-time (press Ctrl+C to stop)
+sudo journalctl -u udpquake -f
+```
+
+If everything is working correctly, you should see log messages indicating the service has started and is monitoring for earthquakes.
 
 ## Configuration
 
@@ -257,6 +327,46 @@ Distance from node: 23km
 - Status monitoring: `sudo systemctl status udpquake`
 
 ## Troubleshooting
+
+### Service Setup Issues
+
+If you're having trouble setting up the systemd service for the first time, try these steps:
+
+1. **Service fails to start**
+   - Verify all paths in the service file are correct and absolute
+   - Check that the user specified has permissions to access the UDPQuake directory
+   - Ensure the virtual environment exists: `ls -la /path/to/UDPQuake/.venv/bin/python`
+   - Test the command manually: `/path/to/UDPQuake/.venv/bin/python -m udpquake`
+
+2. **Permission denied errors**
+   ```bash
+   # Make sure the service file has correct permissions
+   sudo chmod 644 /etc/systemd/system/udpquake.service
+   
+   # Reload systemd after fixing permissions
+   sudo systemctl daemon-reload
+   ```
+
+3. **Service file syntax errors**
+   ```bash
+   # Check for syntax issues in the service file
+   sudo systemctl daemon-reload
+   sudo systemctl status udpquake
+   ```
+
+4. **Environment variables not loading**
+   - Ensure your `.env` file is in the WorkingDirectory specified in the service file
+   - Check file permissions: `ls -la /path/to/UDPQuake/.env`
+   - The service user must have read access to the `.env` file
+
+5. **Check service logs for detailed errors**
+   ```bash
+   # View full service logs
+   sudo journalctl -u udpquake --no-pager
+   
+   # View only error messages
+   sudo journalctl -u udpquake -p err
+   ```
 
 ### Common Issues
 
