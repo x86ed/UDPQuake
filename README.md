@@ -164,19 +164,27 @@ Add the following content to the service file, **replacing the paths and usernam
 ```ini
 [Unit]
 Description=UDPQuake Seismic Monitor
-After=network.target
-Wants=network.target
+After=network-online.target ssh.service
+Wants=network-online.target
+Requires=network-online.target
 
 [Service]
 Type=simple
 User=YOUR_USERNAME
 WorkingDirectory=/full/path/to/UDPQuake
 ExecStart=/full/path/to/UDPQuake/.venv/bin/python -m udpquake
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=60
+TimeoutStopSec=30
 Environment=PATH=/full/path/to/UDPQuake/.venv/bin
 StandardOutput=journal
 StandardError=journal
+
+# Resource limits to prevent system issues
+LimitNOFILE=1024
+MemoryMax=256M
+CPUQuota=50%
 
 [Install]
 WantedBy=multi-user.target
@@ -187,19 +195,27 @@ WantedBy=multi-user.target
 ```ini
 [Unit]
 Description=UDPQuake Seismic Monitor
-After=network.target
-Wants=network.target
+After=network-online.target ssh.service
+Wants=network-online.target
+Requires=network-online.target
 
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/UDPQuake
 ExecStart=/home/pi/UDPQuake/.venv/bin/python -m udpquake
-Restart=always
-RestartSec=10
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=60
+TimeoutStopSec=30
 Environment=PATH=/home/pi/UDPQuake/.venv/bin
 StandardOutput=journal
 StandardError=journal
+
+# Resource limits to prevent system issues
+LimitNOFILE=1024
+MemoryMax=256M
+CPUQuota=50%
 
 [Install]
 WantedBy=multi-user.target
@@ -379,6 +395,108 @@ If you're having trouble setting up the systemd service for the first time, try 
    - Verify UDP host/port configuration
    - Check network connectivity to Meshtastic device
    - Ensure Meshtastic device is in correct mode
+
+3. **SSH access blocked after starting UDPQuake service**
+
+   **⚠️ Important**: UDPQuake uses UDP multicast on `224.0.0.69:4403`, which should not interfere with SSH (port 22). This issue is likely caused by network configuration or resource conflicts.
+
+   **Immediate Recovery:**
+   ```bash
+   # Stop the UDPQuake service immediately to restore SSH access
+   sudo systemctl stop udpquake
+   
+   # Disable automatic startup until the issue is resolved
+   sudo systemctl disable udpquake
+   ```
+
+   **Root Cause Analysis:**
+   ```bash
+   # Verify UDPQuake is not using port 22 (it shouldn't be)
+   sudo netstat -tuln | grep :22
+   sudo netstat -tuln | grep :4403
+   
+   # Check what processes are listening on network ports
+   sudo ss -tulpn | grep :22
+   sudo ss -tulpn | grep :4403
+   
+   # Verify SSH daemon is running
+   sudo systemctl status ssh
+   ```
+
+   **Potential Solutions:**
+
+   a) **Network Interface Timing Issues** - UDPQuake might start before network is fully ready:
+   ```bash
+   sudo nano /etc/systemd/system/udpquake.service
+   ```
+   Update the `[Unit]` section:
+   ```ini
+   [Unit]
+   Description=UDPQuake Seismic Monitor
+   After=network-online.target ssh.service
+   Wants=network-online.target
+   Requires=network-online.target
+   ```
+
+   b) **Resource Exhaustion** - Check if UDPQuake is consuming too many system resources:
+   ```bash
+   # Monitor resource usage
+   sudo systemctl start udpquake
+   top -p $(pgrep -f udpquake)
+   free -h
+   
+   # Check file descriptor usage
+   sudo lsof -p $(pgrep -f udpquake) | wc -l
+   ```
+
+   c) **Enhanced Service Configuration** - Use resource limits to prevent system exhaustion:
+   ```bash
+   sudo nano /etc/systemd/system/udpquake.service
+   ```
+   ```ini
+   [Unit]
+   Description=UDPQuake Seismic Monitor
+   After=network-online.target ssh.service
+   Wants=network-online.target
+   Requires=network-online.target
+   
+   [Service]
+   Type=simple
+   User=pi
+   WorkingDirectory=/home/pi/UDPQuake
+   ExecStart=/home/pi/UDPQuake/.venv/bin/python -m udpquake
+   Restart=on-failure
+   RestartSec=30
+   TimeoutStartSec=60
+   TimeoutStopSec=30
+   Environment=PATH=/home/pi/UDPQuake/.venv/bin
+   StandardOutput=journal
+   StandardError=journal
+   
+   # Resource limits to prevent system exhaustion
+   LimitNOFILE=1024
+   MemoryMax=256M
+   CPUQuota=50%
+   
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+   **Safe Testing Approach:**
+   ```bash
+   # Always test with console/physical access available
+   # 1. Start service manually
+   sudo systemctl start udpquake
+   
+   # 2. Test SSH access from another terminal
+   ssh user@your-pi-ip
+   
+   # 3. Monitor logs for issues
+   sudo journalctl -u udpquake -f
+   
+   # 4. If SSH fails, use console to stop service
+   sudo systemctl stop udpquake
+   ```
 
 3. **Service won't start**
    - Check Python dependencies: `uv pip list`

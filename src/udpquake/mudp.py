@@ -36,7 +36,7 @@ def send_quake(mag: float, place:str, when:int, latitude: float, longitude: floa
     try:
         dt = datetime.fromtimestamp(when / 1000)
         formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-    except (ValueError, OSError, OverflowError) as e:
+    except (ValueError, OSError) as e:
         # Fallback if timestamp is invalid
         formatted_time = "Unknown time"
         print(f"Warning: Invalid timestamp {when}: {e}")
@@ -48,8 +48,9 @@ def send_quake(mag: float, place:str, when:int, latitude: float, longitude: floa
     message += f"Mag: {mag:.1f} Depth: {depth:.1f} km"
     
     try:
-        send_text_message(message)
-        time.sleep(3)
+        if mag > 3.5:
+            send_text_message(message)
+            time.sleep(3)
         
         # Send position with reasonable altitude (negative depth in meters, limited range)
         altitude_meters = int(max(-10000, min(0, -(depth * 1000))))  # Clamp between -10km and 0, convert to int
