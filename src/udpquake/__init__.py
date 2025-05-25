@@ -1,2 +1,2 @@
 """UDPQuake - USGS Earthquake Monitor for Meshtastic Networks"""
-__version__ = "2.1.0-dev"
+__version__ = "2.2.0-dev"
