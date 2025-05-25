@@ -5,6 +5,10 @@ A Raspberry Pi service that monitors USGS earthquake feeds and broadcasts seismi
 ## Overview
 
 UDPQuake is a Python service designed to run on Raspberry Pi nodes to provide real-time earthquake monitoring and alerting for mesh networks. The service subscribes to USGS earthquake data feeds and automatically pushes relevant seismic information to connected Meshtastic devices, enabling distributed earthquake awareness in off-grid or emergency communication scenarios.
+![01EC05FA-1A77-4BC6-B33C-A82C9AC776DE_1_201_a](https://github.com/user-attachments/assets/72a94624-8d3b-471d-8ac2-d87ca90731d9)
+![C5E77878-DDFE-4548-8A7A-2D6916F8C604_1_102_o](https://github.com/user-attachments/assets/db6f9b7a-c1ca-4636-8f3b-1d929405177f)
+![72160A9A-CA54-4734-9F1F-D3D2A491D849_1_201_a](https://github.com/user-attachments/assets/0dd7417e-a6c8-48e3-9331-017d6860e2af)
+
 
 ## Features
 
