@@ -38,7 +38,7 @@ def main():
     while running:
         try:
             # Get earthquakes from the last hour with magnitude > 2.0
-            one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+            one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S+00:00')
             
             earthquakes = earthquake_service.fetch_earthquakes(
                 min_magnitude=2.0,

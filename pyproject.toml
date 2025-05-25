@@ -27,6 +27,7 @@ classifiers = [
 dependencies = [
     "requests>=2.25.0",
     "python-dotenv>=1.0.0",
+    "mudp>=1.0.0a4",
 ]
 
 [project.optional-dependencies]

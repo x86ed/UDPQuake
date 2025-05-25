@@ -4,6 +4,7 @@ import os
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from urllib.parse import urlencode
 
 @dataclass
 class EarthquakeEvent:
@@ -96,7 +97,7 @@ class EarthquakeService:
         if 'limit' in kwargs:
             params['limit'] = kwargs['limit']
             
-        query_string = '&'.join(f"{key}={value}" for key, value in params.items())
+        query_string = urlencode(params)
         return f"/fdsnws/event/1/query?{query_string}"
     
     def fetch_earthquakes(self, **kwargs) -> EarthquakeResponse:
