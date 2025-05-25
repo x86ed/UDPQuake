@@ -3,7 +3,7 @@ import os
 import sys
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add the project root to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,6 +45,9 @@ class TestEarthquakeEvent:
         assert event.status == "automatic"
         assert event.felt_reports == 5
         assert isinstance(event.time, datetime)
+        # Verify timezone-aware datetime
+        assert event.time.tzinfo is not None
+        assert event.time.tzinfo == timezone.utc
     
     def test_from_feature_missing_data(self):
         """Test creating EarthquakeEvent with missing optional data."""
@@ -65,6 +68,92 @@ class TestEarthquakeEvent:
         assert event.longitude == -118.0
         assert event.depth == 10.0
         assert event.felt_reports is None
+
+
+    def test_from_feature_timezone_aware_datetime(self):
+        """Test that EarthquakeEvent creates timezone-aware datetime objects."""
+        feature = {
+            "id": "test_tz",
+            "properties": {
+                "time": 1748036384780  # Unix timestamp in milliseconds
+            },
+            "geometry": {
+                "coordinates": [-118.0, 34.0, 10.0]
+            }
+        }
+        
+        event = EarthquakeEvent.from_feature(feature)
+        
+        # Verify timezone-aware datetime
+        assert event.time.tzinfo is not None
+        assert event.time.tzinfo == timezone.utc
+        
+        # Verify correct conversion from milliseconds
+        expected_time = datetime.fromtimestamp(1748036384780 / 1000, tz=timezone.utc)
+        assert event.time == expected_time
+    
+    def test_from_feature_invalid_timestamp(self):
+        """Test handling of invalid timestamp values."""
+        feature = {
+            "id": "test_invalid",
+            "properties": {
+                "time": 0  # Edge case: timestamp of 0
+            },
+            "geometry": {
+                "coordinates": [-118.0, 34.0, 10.0]
+            }
+        }
+        
+        event = EarthquakeEvent.from_feature(feature)
+        
+        # Should handle timestamp of 0 gracefully
+        expected_time = datetime.fromtimestamp(0, tz=timezone.utc)
+        assert event.time == expected_time
+        assert event.time.tzinfo == timezone.utc
+
+    def test_datetime_timezone_handling(self):
+        """Test that datetime objects are properly timezone-aware."""
+        feature = {
+            "id": "timezone_test",
+            "properties": {
+                "mag": 3.0,
+                "place": "Timezone Test Location",
+                "time": 1640995200000,  # 2022-01-01 00:00:00 UTC in milliseconds
+                "type": "earthquake",
+                "status": "reviewed"
+            },
+            "geometry": {
+                "coordinates": [-118.0, 34.0, 10.0]
+            }
+        }
+        
+        event = EarthquakeEvent.from_feature(feature)
+        
+        # Verify the datetime is timezone-aware and in UTC
+        assert event.time.tzinfo is not None
+        assert event.time.tzinfo == timezone.utc
+        
+        # Verify the specific time conversion
+        expected_time = datetime(2022, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        assert event.time == expected_time
+
+    def test_datetime_microseconds_handling(self):
+        """Test proper handling of datetime without microseconds."""
+        # Test the datetime formatting used in the service
+        now = datetime.now(timezone.utc)
+        
+        # Format without microseconds (as done in the service)
+        formatted = now.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+        
+        # Should not contain microseconds
+        assert '.' not in formatted
+        
+        # Should be parseable back to datetime
+        parsed = datetime.fromisoformat(formatted.replace('+00:00', '+00:00'))
+        
+        # Should be very close to original (within 1 second due to microsecond truncation)
+        time_diff = abs((now - parsed.replace(tzinfo=timezone.utc)).total_seconds())
+        assert time_diff < 1.0
 
 
 class TestEarthquakeResponse:
@@ -177,6 +266,31 @@ class TestEarthquakeService:
         
         for param in expected_params:
             assert param in path
+        
+        # Verify URL encoding is used
+        assert path.startswith("/fdsnws/event/1/query?")
+        
+    def test_build_query_path_url_encoding(self):
+        """Test that URL encoding is properly applied to query parameters."""
+        service = EarthquakeService()
+        path = service._build_query_path(
+            start_time="2024-01-01T00:00:00+00:00"
+        )
+        
+        # URL encoding should handle special characters properly (colons and plus signs get encoded)
+        assert "starttime=2024-01-01T00%3A00%3A00%2B00%3A00" in path
+    
+    def test_build_query_path_datetime_formatting(self):
+        """Test that datetime parameters are properly formatted."""
+        service = EarthquakeService()
+        test_datetime = datetime(2024, 1, 15, 12, 30, 45, 123456, timezone.utc)
+        formatted_time = test_datetime.strftime('%Y-%m-%dT%H:%M:%S+00:00')
+        
+        path = service._build_query_path(start_time=formatted_time)
+        
+        # Verify the datetime format doesn't include microseconds and is URL encoded
+        assert "2024-01-15T12%3A30%3A45%2B00%3A00" in path
+        assert "123456" not in path  # Microseconds should be stripped
     
     def test_build_query_path_with_overrides(self):
         """Test building query path with parameter overrides."""
@@ -190,9 +304,9 @@ class TestEarthquakeService:
         
         expected_params = [
             "minmagnitude=2.5",
-            "maxmagnitude=6.0",
+            "maxmagnitude=6.0", 
             "limit=50",
-            "starttime=2024-01-01T00:00:00"
+            "starttime=2024-01-01T00%3A00%3A00"  # URL encoded version
         ]
         
         for param in expected_params:

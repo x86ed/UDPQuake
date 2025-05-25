@@ -36,7 +36,7 @@ def send_quake(mag: float, place:str, when:int, latitude: float, longitude: floa
     try:
         dt = datetime.fromtimestamp(when / 1000)
         formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S UTC")
-    except (ValueError, OSError) as e:
+    except (ValueError, OSError, OverflowError) as e:
         # Fallback if timestamp is invalid
         formatted_time = "Unknown time"
         print(f"Warning: Invalid timestamp {when}: {e}")
