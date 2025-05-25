@@ -35,18 +35,27 @@ def main():
     # Track processed earthquake IDs to avoid duplicates
     processed_ids = set()
     
+    # Flag to track if this is the first run
+    first_run = True
+    
     while running:
         try:
-            # Get earthquakes from the last hour with magnitude > 2.0
-            one_hour_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+            # On first run, check last 72 hours; subsequent runs check last hour
+            if first_run:
+                time_ago = (datetime.now(timezone.utc) - timedelta(hours=72)).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                time_description = "72 hours"
+                first_run = False
+            else:
+                time_ago = (datetime.now(timezone.utc) - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                time_description = "last hour"
             
             earthquakes = earthquake_service.fetch_earthquakes(
                 min_magnitude=2.0,
-                start_time=one_hour_ago,
+                start_time=time_ago,
                 limit=50
             )
             
-            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found {earthquakes.count} earthquakes in the last hour")
+            print(f"\n[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Found {earthquakes.count} earthquakes in the {time_description}")
             print(f"Search bounds: {earthquake_service.min_latitude},{earthquake_service.min_longitude} to {earthquake_service.max_latitude},{earthquake_service.max_longitude}")
             
             # Process only new earthquakes

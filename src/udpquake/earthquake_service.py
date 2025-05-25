@@ -3,7 +3,7 @@ import json
 import os
 from typing import Dict, List, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 @dataclass
@@ -31,7 +31,7 @@ class EarthquakeEvent:
             id=feature['id'],
             magnitude=properties.get('mag', 0.0),
             place=properties.get('place', ''),
-            time=datetime.fromtimestamp(properties.get('time', 0) / 1000),
+            time=datetime.fromtimestamp(properties.get('time', 0) / 1000, tz=timezone.utc),
             longitude=coordinates[0],
             latitude=coordinates[1],
             depth=coordinates[2],
