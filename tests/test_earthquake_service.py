@@ -9,7 +9,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from UDPQuake.earthquake_service import EarthquakeEvent, EarthquakeResponse, EarthquakeService
+from udpquake.earthquake_service import EarthquakeEvent, EarthquakeResponse, EarthquakeService
 
 
 class TestEarthquakeEvent:

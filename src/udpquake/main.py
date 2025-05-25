@@ -1,10 +1,10 @@
 import time
 import signal
-from earthquake_service import EarthquakeService
+from .earthquake_service import EarthquakeService
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 
-from mudp import send_quake
+from .mudp import send_quake
 
 # Global variable to control the main loop
 running = True

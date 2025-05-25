@@ -29,61 +29,111 @@ UDPQuake is a Python service designed to run on Raspberry Pi nodes to provide re
 - Internet connectivity for USGS feed access
 - Network access to Meshtastic devices
 
-## Installation
+## Setup and Installation
+
+This project uses [UV](https://docs.astral.sh/uv/) for fast Python package management. Follow these steps for a complete setup:
+
+### Prerequisites
+
+- Python 3.12 or newer
+- [UV package manager](https://docs.astral.sh/uv/getting-started/installation/) installed
+- Internet connection for USGS feed access and dependency installation
 
 ### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/yourusername/UDPQuake.git
-cd UDPQuake/UDPQuake
+cd UDPQuake
 ```
 
-### 2. Install Dependencies
+### 2. Create Virtual Environment
 
 ```bash
-pip install -e .
+uv venv
+source .venv/bin/activate
 ```
 
-### 3. Configure the Service
-
-Create a configuration file:
+### 3. Install Runtime Dependencies
 
 ```bash
-cp config.example.yaml config.yaml
+uv pip install -e .
 ```
 
-Edit `config.yaml` to match your setup:
+This installs the core dependencies:
 
-```yaml
-usgs:
-  feed_url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson"
-  update_interval: 300  # seconds
-  
-filters:
-  min_magnitude: 3.0
-  max_distance_km: 500  # from your location
-  location:
-    latitude: 37.7749
-    longitude: -122.4194
-    
-meshtastic:
-  udp_host: "192.168.1.100"
-  udp_port: 4403
-  
-logging:
-  level: INFO
-  file: "/var/log/udpquake.log"
+- `requests` - For USGS earthquake API calls
+- `python-dotenv` - For environment variable management
+
+### 4. Install Development Dependencies (Optional)
+
+If you plan to contribute or run tests:
+
+```bash
+uv pip install -e ".[dev]"
 ```
 
-### 4. Test the Service
+This adds development tools:
+
+- `pytest` - For running unit tests
+- `pytest-cov` - For test coverage reporting
+- `black` - Code formatter
+- `isort` - Import sorter
+- `mypy` - Type checker
+
+### 5. Verify Installation
+
+Run the comprehensive unit tests to ensure everything is working:
+
+```bash
+pytest tests/ -v
+```
+
+You should see all tests pass in under a second.
+
+### 6. Configure the Service
+
+UDPQuake uses environment variables for configuration. Create a `.env` file in the project root:
+
+```bash
+touch .env
+```
+
+Edit the `.env` file to configure your setup:
+
+```bash
+# USGS Earthquake Service Configuration
+USGS_HOST=earthquake.usgs.gov
+EARTHQUAKE_MIN_LATITUDE=33.0
+EARTHQUAKE_MIN_LONGITUDE=-120.0
+EARTHQUAKE_MAX_LATITUDE=35.0
+EARTHQUAKE_MAX_LONGITUDE=-116.0
+
+# Optional: Override default coordinate bounds for your region
+# Example for Southern California (default values shown above)
+# For Northern California, you might use:
+# EARTHQUAKE_MIN_LATITUDE=36.0
+# EARTHQUAKE_MIN_LONGITUDE=-124.0
+# EARTHQUAKE_MAX_LATITUDE=42.0
+# EARTHQUAKE_MAX_LONGITUDE=-119.0
+```
+
+**Available Environment Variables:**
+
+- `USGS_HOST` - USGS API hostname (default: `earthquake.usgs.gov`)
+- `EARTHQUAKE_MIN_LATITUDE` - Southern boundary (default: `33.0`)
+- `EARTHQUAKE_MIN_LONGITUDE` - Western boundary (default: `-120.0`)
+- `EARTHQUAKE_MAX_LATITUDE` - Northern boundary (default: `35.0`)
+- `EARTHQUAKE_MAX_LONGITUDE` - Eastern boundary (default: `-116.0`)
+
+### 7. Test the Service
 
 Run the service manually to test:
 
 ```bash
-python main.py
+python -m udpquake
 ```
 
-### 5. Install as System Service
+### 8. Install as System Service
 
 Create a systemd service file:
 
@@ -102,10 +152,11 @@ Wants=network.target
 [Service]
 Type=simple
 User=pi
-WorkingDirectory=/home/pi/UDPQuake/UDPQuake
-ExecStart=/usr/bin/python3 main.py
+WorkingDirectory=/home/pi/UDPQuake
+ExecStart=/home/pi/UDPQuake/.venv/bin/python -m udpquake
 Restart=always
 RestartSec=10
+Environment=PATH=/home/pi/UDPQuake/.venv/bin
 
 [Install]
 WantedBy=multi-user.target
@@ -121,21 +172,41 @@ sudo systemctl start udpquake
 
 ## Configuration
 
-### USGS Feed Options
+UDPQuake is configured using environment variables defined in a `.env` file. Here are the available configuration options:
 
-- **feed_url**: USGS GeoJSON feed URL (hourly, daily, or weekly)
-- **update_interval**: How often to check for new earthquakes (seconds)
+### USGS Service Configuration
 
-### Filter Settings
+- **USGS_HOST**: USGS API hostname (default: `earthquake.usgs.gov`)
+- **EARTHQUAKE_MIN_LATITUDE**: Southern boundary for earthquake queries (default: `33.0`)
+- **EARTHQUAKE_MIN_LONGITUDE**: Western boundary for earthquake queries (default: `-120.0`) 
+- **EARTHQUAKE_MAX_LATITUDE**: Northern boundary for earthquake queries (default: `35.0`)
+- **EARTHQUAKE_MAX_LONGITUDE**: Eastern boundary for earthquake queries (default: `-116.0`)
 
-- **min_magnitude**: Minimum earthquake magnitude to report
-- **max_distance_km**: Maximum distance from your location to report
-- **location**: Your coordinates for distance calculations
+### Regional Configuration Examples
 
-### Meshtastic Integration
+**Southern California (default):**
+```bash
+EARTHQUAKE_MIN_LATITUDE=33.0
+EARTHQUAKE_MIN_LONGITUDE=-120.0
+EARTHQUAKE_MAX_LATITUDE=35.0
+EARTHQUAKE_MAX_LONGITUDE=-116.0
+```
 
-- **udp_host**: IP address of your Meshtastic device
-- **udp_port**: UDP port for Meshtastic communication (typically 4403)
+**Northern California:**
+```bash
+EARTHQUAKE_MIN_LATITUDE=36.0
+EARTHQUAKE_MIN_LONGITUDE=-124.0
+EARTHQUAKE_MAX_LATITUDE=42.0
+EARTHQUAKE_MAX_LONGITUDE=-119.0
+```
+
+**Pacific Northwest:**
+```bash
+EARTHQUAKE_MIN_LATITUDE=42.0
+EARTHQUAKE_MIN_LONGITUDE=-125.0
+EARTHQUAKE_MAX_LATITUDE=49.0
+EARTHQUAKE_MAX_LONGITUDE=-116.0
+```
 
 ## Usage
 
@@ -167,7 +238,7 @@ sudo journalctl -u udpquake -f
 
 Earthquake alerts sent to the mesh include:
 
-```
+```sh
 🚨 EARTHQUAKE ALERT
 Magnitude: 4.2
 Location: 15km SW of San Francisco, CA
@@ -197,16 +268,22 @@ Distance from node: 23km
    - Ensure Meshtastic device is in correct mode
 
 3. **Service won't start**
-   - Check Python dependencies: `pip list`
-   - Verify configuration file syntax
+   - Check Python dependencies: `uv pip list`
+   - Verify environment variables in `.env` file
    - Review systemd service file permissions
 
 ### Debug Mode
 
-Run with verbose logging:
+For debugging, you can run the service directly to see console output:
 
 ```bash
-python main.py --debug
+python -m udpquake
+```
+
+Or check the systemd service logs:
+
+```bash
+sudo journalctl -u udpquake -f
 ```
 
 ## Contributing
@@ -229,7 +306,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Support
 
-- 📧 Email: support@udpquake.org
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/UDPQuake/issues)
 - 💬 Discussion: [GitHub Discussions](https://github.com/yourusername/UDPQuake/discussions)
 
