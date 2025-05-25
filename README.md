@@ -286,6 +286,52 @@ Or check the systemd service logs:
 sudo journalctl -u udpquake -f
 ```
 
+## Development
+
+### Version Management
+
+This project uses [bump2version](https://github.com/c4urself/bump2version) for automated version management. Versions are automatically updated in both `src/udpquake/__init__.py` and `pyproject.toml`.
+
+#### Version Bumping Examples:
+
+```bash
+# Bump patch version (2.0.0-dev → 2.0.1-dev)
+bumpversion patch
+
+# Bump minor version (2.0.0-dev → 2.1.0-dev)
+bumpversion minor
+
+# Bump major version (2.0.0-dev → 3.0.0-dev)
+bumpversion major
+
+# Release from dev to production (2.0.0-dev → 2.0.0)
+bumpversion --new-version "2.0.0" release
+
+# Release stages: dev → alpha → beta → prod
+bumpversion release  # dev → alpha
+bumpversion release  # alpha → beta
+bumpversion release  # beta → prod
+```
+
+#### Version Format:
+- Development: `X.Y.Z-dev`
+- Alpha: `X.Y.Z-alpha` 
+- Beta: `X.Y.Z-beta`
+- Production: `X.Y.Z`
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_mudp.py -v
+
+# Run with coverage report
+pytest tests/ --cov=src/udpquake --cov-report=html
+```
+
 ## Contributing
 
 1. Fork the repository
