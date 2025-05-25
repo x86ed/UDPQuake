@@ -178,13 +178,14 @@ UDPQuake is configured using environment variables defined in a `.env` file. Her
 
 - **USGS_HOST**: USGS API hostname (default: `earthquake.usgs.gov`)
 - **EARTHQUAKE_MIN_LATITUDE**: Southern boundary for earthquake queries (default: `33.0`)
-- **EARTHQUAKE_MIN_LONGITUDE**: Western boundary for earthquake queries (default: `-120.0`) 
+- **EARTHQUAKE_MIN_LONGITUDE**: Western boundary for earthquake queries (default: `-120.0`)
 - **EARTHQUAKE_MAX_LATITUDE**: Northern boundary for earthquake queries (default: `35.0`)
 - **EARTHQUAKE_MAX_LONGITUDE**: Eastern boundary for earthquake queries (default: `-116.0`)
 
 ### Regional Configuration Examples
 
 **Southern California (default):**
+
 ```bash
 EARTHQUAKE_MIN_LATITUDE=33.0
 EARTHQUAKE_MIN_LONGITUDE=-120.0
@@ -193,6 +194,7 @@ EARTHQUAKE_MAX_LONGITUDE=-116.0
 ```
 
 **Northern California:**
+
 ```bash
 EARTHQUAKE_MIN_LATITUDE=36.0
 EARTHQUAKE_MIN_LONGITUDE=-124.0
@@ -201,6 +203,7 @@ EARTHQUAKE_MAX_LONGITUDE=-119.0
 ```
 
 **Pacific Northwest:**
+
 ```bash
 EARTHQUAKE_MIN_LATITUDE=42.0
 EARTHQUAKE_MIN_LONGITUDE=-125.0
@@ -292,7 +295,7 @@ sudo journalctl -u udpquake -f
 
 This project uses [bump2version](https://github.com/c4urself/bump2version) for automated version management. Versions are automatically updated in both `src/udpquake/__init__.py` and `pyproject.toml`.
 
-#### Version Bumping Examples:
+#### Version Bumping Examples
 
 ```bash
 # Bump patch version (2.0.0-dev → 2.0.1-dev)
@@ -313,9 +316,10 @@ bumpversion release  # alpha → beta
 bumpversion release  # beta → prod
 ```
 
-#### Version Format:
+#### Version Format
+
 - Development: `X.Y.Z-dev`
-- Alpha: `X.Y.Z-alpha` 
+- Alpha: `X.Y.Z-alpha`
 - Beta: `X.Y.Z-beta`
 - Production: `X.Y.Z`
 
