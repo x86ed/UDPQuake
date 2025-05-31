@@ -3,8 +3,9 @@ import signal
 from .earthquake_service import EarthquakeService
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
+from mudp import (send_nodeinfo)
 
-from .mudp import send_quake
+from .mudp import send_quake, setup_node
 
 # Global variable to control the main loop
 running = True
@@ -27,7 +28,7 @@ def main():
     
     print(f"UDPQuake - Earthquake Monitor")
     print(f"Fetching earthquake data every minute. Press Ctrl+C to exit.")
-    print("-" * 60)
+    print("-" * 60) # Allow some time for node info to propagate
     
     # Initialize the earthquake service
     earthquake_service = EarthquakeService()

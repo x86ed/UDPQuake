@@ -3,7 +3,6 @@ import time
 from mudp import (
     conn,
     node,
-    listen_for_packets,
     send_nodeinfo,
     send_text_message,
     send_position,
